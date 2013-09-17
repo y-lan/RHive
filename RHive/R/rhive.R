@@ -1,4 +1,4 @@
-# Copyright 2011 NexR
+# Copyright 2013 NexR
 #    
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +11,202 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+
+
+############
+# New APIs #
+############
+
+
+##
+#
+# return hive infomation
+##
+rhive.info <- function(host="127.0.0.1", port=10000, is.server2=NA) {
+  if (is.na(server2)) {
+    # server2 <- 
+  }
+
+  list(host=host, port=port, is.server2=is.server2)
+}
+
+
+##
+# 
+# return session
+##
+rhive.connect <- function(hive.info, user=NULL, password=NULL) {
+  init.jvm()
+
+  client <- connect(hive.info$host, as.integer(hive.info$port), user, password)
+  check.jars(client)
+
+  register.udfs(client)
+  set.configs(client)
+
+  make.basedirs(client)
+
+  if (is.null(user)) {
+    user <- Sys.info()[["user"]] 
+  }
+
+  list(user=user, wd=getwd(), tempdir=tempdir(), client=client)
+}
+
+##
+#
+# return data frame object
+##
+rhive.query <- function(session, query, fetchsize=50, limit=-1) {
+  client <- session$client
+  result <- client$query(query, as.integer(limit), as.integer(fetchsize))
+  
+  process(result) 
+}
+
+##
+#
+# return 
+##
+rhive.execute <- function(session, query) {
+
+}
+
+##
+#
+# return 
+##
+rhive.set <- function(session, key, value) {
+
+}
+
+##
+#
+# return 
+##
+rhive.unset <- function(session, key) {
+
+}
+
+##
+#
+# return 
+##
+rhive.load <- function(session, tablename) {
+
+}
+
+##
+#
+# return 
+##
+rhive.write <- function(session, tablename, data) {
+
+}
+
+
+##
+#
+# return 
+##
+rhive.show.databases <- function(session) {
+
+}
+
+##
+#
+# return 
+##
+rhive.use.database <- function(session, database) {
+
+}
+
+##
+#
+# return 
+##
+rhive.show.tables <- function(session) {
+
+}
+
+##
+#
+# return 
+##
+rhive.desc.table <- function(session, tablename, extended=FALSE) {
+
+}
+
+##
+#
+# return 
+##
+rhive.register.udf <- function(session) {
+
+}
+
+##
+#
+# return 
+##
+rhive.register.udaf <- function(session) {
+
+}
+
+##
+#
+# return table name
+##
+rhive.mapreduce <- function(session) {
+
+}
+
+##
+#
+# return 
+##
+rhive.close <- function(session) {
+  session$client$close()
+}
+
+
+
+init.jvm <- function() {
+
+}
+
+check.jars <- function(client) {
+
+}
+
+register.udfs <- function(client) {
+
+}
+
+set.configs <- function(client) {
+
+}
+
+make.basedirs <- function(client) {
+
+}
+
+set.default <- function(key, value) {
+
+}
+
+get.default <- function(key) {
+
+}
+
+dfs.mkdirs <- function() {
+
+}
+
+
+
+
 
 
 
@@ -108,62 +304,9 @@
  .jinit(classpath=cp, parameters=getOption("java.parameters"))
 }
 
-.rhive.connect <- function(host="127.0.0.1", port=10000, hiveServer2=NA, defaultFS=NULL, updateJar=FALSE, user=NULL, password=NULL) {
-
-  initialized <- .getEnv("INITIALIZED")
-  if (is.null(.getEnv("HIVE_HOME")) || is.null(.getEnv("HADOOP_HOME"))) {
-    warning(
-              paste(
-              "\n\t+-------------------------------------------------------------------------------+\n",
-                "\t+ / Can't find the environment variable 'HIVE_HOME' or 'HADOOP_HOME'.           +\n",
-                "\t+ / Retry rhive.connect() after calling rhive.init() with proper arguments.     +\n",
-                "\t+-------------------------------------------------------------------------------+\n", sep=""), call.=FALSE, immediate.=TRUE)
-  } else if (is.null(initialized) || !initialized) {
-    warning(
-              paste(
-              "\n\t+-------------------------------------------------------------------------------+\n",
-                "\t+ / RHive not initialized properly.                                             +\n",
-                "\t+ / Retry rhive.connect() after calling rhive.init() with proper arguments.     +\n",
-                "\t+-------------------------------------------------------------------------------+\n", sep=""), call.=FALSE, immediate.=TRUE)
-
-  } else {
-    EnvUtils <- .j2r.EnvUtils()
-    userName <- EnvUtils$getUserName()
-    userHome <- EnvUtils$getUserHome()
-    tmpDir <- EnvUtils$getTempDirectory()
-
-   .setEnv("USERNAME", userName)
-   .setEnv("HOME", userHome)
-   .setEnv("TMP_DIR", tmpDir)
-
-    System <- .j2r.System()
-    System$setProperty("RHIVE_UDF_DIR", .FS_UDF_DIR())
-
-    if (is.null(defaultFS)) {
-      defaultFS <- .DEFAULT_FS()
-    }
-   .rhive.hdfs.connect(defaultFS)
-   .copyJarsToHdfs(updateJar)
-
-    if (is.na(hiveServer2)) {
-      hiveServer2 <- .isForVersion2()
-    }
-
-    hiveClient <- .j2r.HiveJdbcClient(hiveServer2)
-    hiveClient$connect(host, as.integer(port), "default", user, password) 
-    hiveClient$addJar(.FS_JAR_PATH())
-
-   .registerUDFs(hiveClient)
-   .setConfigurations(hiveClient)
-
-   .setEnv("hiveClient", hiveClient)
-
-   .makeBaseDirs()
-  }
-}
 
 .copyJarsToHdfs <- function(updateJar) {
-  jar <- paste(system.file(package="RHive"),"java","rhive_udf.jar", sep=.Platform$file.sep)
+  jar <- paste(system.file(package="RHive"), "java", "rhive_udf.jar", sep=.Platform$file.sep)
 
   if (updateJar) {
    .rhive.hdfs.put(jar, .FS_JAR_PATH(), overwrite=TRUE)
