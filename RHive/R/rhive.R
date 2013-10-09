@@ -146,8 +146,8 @@
     if (is.null(defaultFS)) {
       defaultFS <- .DEFAULT_FS()
     }
-   .rhive.hdfs.connect(defaultFS)
-   .copyJarsToHdfs(updateJar)
+   #.rhive.hdfs.connect(defaultFS)
+   #.copyJarsToHdfs(updateJar)
 
     if (is.na(hiveServer2)) {
       hiveServer2 <- .isForVersion2()
@@ -203,6 +203,7 @@
 }
 
 .registerUDFs <- function(hiveClient) {
+  hiveClient$execute("add jar hdfs:///rhive/lib/rhive_udf.jar")
   hiveClient$execute(sprintf("CREATE TEMPORARY FUNCTION %s AS \"%s\"", "R", "com.nexr.rhive.hive.udf.RUDF"))
   hiveClient$execute(sprintf("CREATE TEMPORARY FUNCTION %s AS \"%s\"", "RA", "com.nexr.rhive.hive.udf.RUDAF"))
   hiveClient$execute(sprintf("CREATE TEMPORARY FUNCTION %s AS \"%s\"", "unfold", "com.nexr.rhive.hive.udf.GenericUDTFUnFold"))
